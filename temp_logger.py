@@ -11,6 +11,7 @@ from datetime  import datetime
 import asyncio
 from bleak import BleakClient
 import subprocess
+import os
 
 # sensor constants
 UUID_BatteryLevel   = '00002a19-0000-1000-8000-00805f9b34fb'
@@ -34,14 +35,19 @@ async def GetSensorData(mac_address):
             sensor_result.append(battery)
         except Exception as e:
             print(e)
+        finally:
+            subprocess.call(['bluetoothctl', 'disconnect', mac])
 
 
+# get username and password from environment variables
+db_user = os.getenv('TEMP_LOGGER_USER')
+db_password = os.getenv('TEMP_LOGGER_PASS')
 
 # connect to database
 temp_db = mysql.connector.connect(
     host = '192.168.100.2',
-    user = 'temp_logger',
-    password = 'temp_admin',
+    user = db_user,
+    password = db_password,
     database = 'temperature_logs'
 )
 
@@ -61,6 +67,7 @@ ts = datetime.now()
 recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
 print(recordTimestamp, 'Found {} sensors.'.format(len(sql_result)))
 
+# collect data from sensors and save to database
 for address in sql_result:
     mac = address[0]
     ts = datetime.now()
@@ -79,10 +86,6 @@ for address in sql_result:
     recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
 
     print(recordTimestamp, 'Uploaded sensor data to database.')
-
-for address in sql_result:
-    mac = address[0]
-    subprocess.call(['bluetoothctl', 'disconnect', mac])
 
 # disconnect from database
 temp_db.disconnect()
