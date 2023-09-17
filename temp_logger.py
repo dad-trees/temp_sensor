@@ -39,10 +39,10 @@ async def GetSensorData(mac_address):
 
 # connect to database
 temp_db = mysql.connector.connect(
-    host = '192.168.100.4',
+    host = '192.168.100.2',
     user = 'temp_logger',
     password = 'temp_admin',
-    database = 'temp_logs'
+    database = 'temperature_logs'
 )
 
 # get a db cursor for executing sql commands
