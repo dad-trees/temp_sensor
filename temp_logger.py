@@ -17,8 +17,6 @@ import os
 UUID_BatteryLevel   = '00002a19-0000-1000-8000-00805f9b34fb'
 UUID_Data           = 'ebe0ccc1-7a0a-4b0c-8a1a-6ff2997da3a6'
 
-sensors = ['A4:C1:38:6B:3A:E2', 'A4:C1:38:3F:C3:20']
-
 sensor_result = []
 
 # get data from the sensors based on the provided mac address
@@ -42,10 +40,12 @@ async def GetSensorData(mac_address):
 # get username and password from environment variables
 db_user = os.getenv('TEMP_LOGGER_USER')
 db_password = os.getenv('TEMP_LOGGER_PASS')
+db_server = os.getenv('DB_SERVER')
+print(db_server)
 
 # connect to database
 temp_db = mysql.connector.connect(
-    host = '192.168.100.2',
+    host = db_server,
     user = db_user,
     password = db_password,
     database = 'temperature_logs'
