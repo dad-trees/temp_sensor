@@ -1,5 +1,5 @@
 # Temperature Sensor
-This is a simple code that collects data from the temperature and humidity sensor LYWSD03MMC.  The code collects the current temperature, humidity and battery voltage from the sensor and save those pieces of information to a database.   
+This is a simple code that collects data from the temperature and humidity sensor LYWSD03MMC.  The code collects the current temperature, humidity and battery voltage from the sensor and save those pieces of information to a database. The code does not retrieve historical data stored in the sensor, hence the need for an external database.   
 
 ## Requirements
 mysql.connector  
