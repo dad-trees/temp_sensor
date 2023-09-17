@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""
+Code to collect temperature, humidity and battery voltage from the Xiaomi LYWSD03MMC sensors
+  - this will only collect sensor data at the time of execution
+  - this does not collect historical data from the sensors
+"""
+
 import mysql.connector
 from datetime  import datetime
 import asyncio
@@ -14,6 +20,7 @@ sensors = ['A4:C1:38:6B:3A:E2', 'A4:C1:38:3F:C3:20']
 
 sensor_result = []
 
+# get data from the sensors based on the provided mac address
 async def GetSensorData(mac_address):
     global sensor_result
     async with BleakClient(mac_address) as client:
@@ -38,6 +45,7 @@ temp_db = mysql.connector.connect(
     database = 'temp_logs'
 )
 
+# get a db cursor for executing sql commands
 temp_cursor = temp_db.cursor()
 
 # get list of sensors
@@ -52,10 +60,6 @@ sql_result = temp_cursor.fetchall()
 ts = datetime.now()
 recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
 print(recordTimestamp, 'Found {} sensors.'.format(len(sql_result)))
-
-for address in sql_result:
-    mac = address[0]
-    subprocess.call(['bluetoothctl', 'disconnect', mac])
 
 for address in sql_result:
     mac = address[0]
@@ -76,6 +80,9 @@ for address in sql_result:
 
     print(recordTimestamp, 'Uploaded sensor data to database.')
 
+for address in sql_result:
+    mac = address[0]
+    subprocess.call(['bluetoothctl', 'disconnect', mac])
 
 # disconnect from database
 temp_db.disconnect()
