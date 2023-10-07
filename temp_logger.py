@@ -33,9 +33,6 @@ async def GetSensorData(mac_address):
             sensor_result.append(battery)
         except Exception as e:
             print(e)
-        finally:
-            subprocess.call(['bluetoothctl', 'disconnect', mac])
-
 
 # get username and password from environment variables
 db_user = os.getenv('TEMP_LOGGER_USER')
@@ -51,8 +48,16 @@ temp_db = mysql.connector.connect(
     database = 'temperature_logs'
 )
 
+linode_db = mysql.connector.connect(
+    host = '172.234.54.152',
+    user = db_user,
+    password = db_password,
+    database = 'temperature_logs'
+)
+
 # get a db cursor for executing sql commands
 temp_cursor = temp_db.cursor()
+linode_cursor = linode_db.cursor()
 
 # get list of sensors
 ts = datetime.now()
@@ -67,6 +72,9 @@ ts = datetime.now()
 recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
 print(recordTimestamp, 'Found {} sensors.'.format(len(sql_result)))
 
+# for address in sql_result:
+#     subprocess.call(['bluetoothctl', 'disconnect', address[0]])
+
 # collect data from sensors and save to database
 for address in sql_result:
     mac = address[0]
@@ -74,19 +82,32 @@ for address in sql_result:
     recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
     print(recordTimestamp, 'Retrieving sensor data from {}'.format(mac))
     
-        # get data from sensor
-    sensor_result = []
-    asyncio.run(GetSensorData(mac))
+    # get data from sensor
+    try:
+        sensor_result = []
+        asyncio.run(GetSensorData(mac))
+    
+        sql = "INSERT IGNORE INTO data_logs (mac_address, log_timestamp, temperature, humidity, battery) VALUES ('{}', '{}', {}, {}, {})".format(mac, recordTimestamp, sensor_result[0], sensor_result[1], sensor_result[2])
+        temp_cursor.execute(sql)
+        temp_db.commit()
+        linode_cursor.execute(sql)
+        linode_db.commit()
 
-    sql = "INSERT IGNORE INTO data_logs (mac_address, log_timestamp, temperature, humidity, battery) VALUES ('{}', '{}', {}, {}, {})".format(mac, recordTimestamp, sensor_result[0], sensor_result[1], sensor_result[2])
-    temp_cursor.execute(sql)
-    temp_db.commit()
+        ts = datetime.now()
+        recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
 
-    ts = datetime.now()
-    recordTimestamp = ts.strftime('%Y-%m-%d %H:%M:%S')
+        print(recordTimestamp, 'Uploaded sensor data to database.')
 
-    print(recordTimestamp, 'Uploaded sensor data to database.')
+    except Exception as e:
+        print(recordTimestamp,'Error: {}'.format(e))
 
 # disconnect from database
 temp_db.disconnect()
+linode_db.disconnect()
+
+# disconnect from bluetooth devices
+for address in sql_result:
+    subprocess.call(['bluetoothctl', 'disconnect', address[0]])
+
+
 
